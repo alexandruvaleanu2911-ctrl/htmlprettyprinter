@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+echo "trebuie sa folosesti cel putin un parametru"
+exit 1
+fi
+if [ $# -gt 1 ]; then
+echo "trebuie sa folosesti doar un parametru"
+exit 1
+fi
+fisier="$1"
+awk '{
+    n = length($0)
+    for(i=1;i<=n;i++){
+        c = substr($0,i,1)
+        printf "%s", c
+        if(c==">" && i!=n) printf "\n"
+    }
+    printf "\n"
+}' input.html > output.html
+
