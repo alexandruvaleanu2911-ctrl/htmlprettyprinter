@@ -1,0 +1,17 @@
+#!/bin/bash
+
+[ $# -ne 1 ] && { echo "Utilizare: $0 fisier.html"; exit 1; }
+
+file="$1"
+
+open=$(grep -oE "<[a-zA-Z0-9]+(\s[^>])?>" "$file" | grep -vE "<(br|hr|img|input|meta|link)[^>]\/?>" | wc -l)
+close=$(grep -oE "</[a-zA-Z0-9]+>" "$file" | wc -l)
+
+echo "Taguri deschise: $open"
+echo "Taguri închise:  $close"
+
+if [ "$open" -eq "$close" ]; then
+  echo "Toate tagurile par să fie închise."
+else
+  echo "Există taguri neînchise!"
+fi
