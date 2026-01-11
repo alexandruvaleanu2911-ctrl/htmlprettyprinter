@@ -1,0 +1,92 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+    echo "Utilizare:"
+    echo "  $0 --minify fisier.html"
+    echo "  $0 --newline fisier.html"
+    echo "  $0 --indent size fisier.html"
+    echo "  $0 --check fisier.html"
+    exit 1
+fi
+
+add_newlines() {
+    local file="$1"
+
+    awk '{
+        n = length($0)
+        for (i = 1; i <= n; i++) {
+            c = substr($0, i, 1)
+            printf "%s", c
+            if (c == ">" && i != n) printf "\n"
+        }
+        printf "\n"
+    }' "$file"
+}
+
+minify_html() {
+    local file="$1"
+    sed 's/>[[:space:]]\+</></g' "$file" | tr -d '\n'
+}
+
+pretty_print_custom() {
+    local file="$1"
+    local indent_size="$2"
+    local level=0
+
+    sed 's/></>\n</g' "$file" | while read -r line; do
+        line=$(echo "$line" | xargs)
+        [[ -z "$line" ]] && continue
+
+        [[ "$line" =~ ^\<\/ ]] && ((level--))
+
+        indent=""
+        for ((i=0; i<level*indent_size; i++)); do
+            indent+=" "
+        done
+
+        echo "${indent}${line}"
+
+        if [[ "$line" =~ ^\<[^\/].*\>$ ]] &&
+           [[ ! "$line" =~ \/\>$ ]] &&
+           [[ ! "$line" =~ ^\<\/ ]] &&
+           [[ ! "$line" =~ .\<\/. ]]; then
+            ((level++))
+        fi
+    done
+}
+
+check_tags() {
+    local file="$1"
+
+    open=$(grep -oE "<[a-zA-Z0-9]+(\s[^>]+)?>" "$file" \
+        | grep -vE "<(br|hr|img|input|meta|link)[^>]*/?>" | wc -l)
+
+    close=$(grep -oE "</[a-zA-Z0-9]+>" "$file" | wc -l)
+
+    echo "Taguri deschise: $open"
+    echo "Taguri închise:  $close"
+
+    if [ "$open" -eq "$close" ]; then
+        echo "Toate tagurile par să fie închise."
+    else
+        echo "Există taguri neînchise!"
+    fi
+}
+
+case "$1" in
+    --minify)
+        minify_html "$2"
+        ;;
+    --newline)
+        add_newlines "$2"
+        ;;
+    --indent)
+        pretty_print_custom "$3" "$2"
+        ;;
+    --check)
+        check_tags "$2"
+        ;;
+    *)
+        echo "Opțiune necunoscută"
+        ;;
+esac
